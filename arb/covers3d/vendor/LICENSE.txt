@@ -1,0 +1,2 @@
+three.js r160 — MIT (c) three.js authors, https://github.com/mrdoob/three.js
+Inter — SIL Open Font License 1.1, https://rsms.me/inter

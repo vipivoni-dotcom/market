@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ru">
+<head><meta charset="utf-8"><title>Передача обложек</title></head>
+<body style="font:14px sans-serif;background:#111;color:#ddd">Передача обложек на Playerok. Окно можно не трогать.
+<script>
+// Playerok не читает файлы с localhost сам, поэтому окно-мост отправляет ему PNG сообщением.
+const ALLOWED = 'https://playerok.com';
+const target = window.opener || (window.parent !== window ? window.parent : null);
+addEventListener('message', async e => {
+  if (e.origin !== ALLOWED || !e.data || !e.data.want) return;
+  try {
+    const r = await fetch('/cards/' + encodeURIComponent(e.data.want) + '.png');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const buf = await r.arrayBuffer();
+    e.source.postMessage({name: e.data.want, buf}, ALLOWED, [buf]);
+  } catch (err) { e.source.postMessage({name: e.data.want, error: String(err)}, ALLOWED); }
+});
+if (target) target.postMessage({bridge: 'ready'}, ALLOWED);
+</script>
+</body>
+</html>

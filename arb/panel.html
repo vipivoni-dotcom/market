@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070605">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="DragDiller">
+<title>Арбитраж цифровых товаров</title>
+<style>
+  /* «Люкс»: один тёмный вид — чёрное с золотом, как обложки карточек DragDiller */
+  :root {
+    color-scheme: dark;
+    --bg: #070605; --bg2: #14100a; --card: rgba(24,19,12,.78); --card-solid: #17120b; --text: #f6edd9; --muted: #a39474;
+    --line: rgba(255,210,122,.13); --accent: #ffd27a; --accent2: #b8862f; --gold-ink: #1c1304;
+    --ok: #7fe3a9; --warn: #ffb84d; --bad: #ff6f6f;
+    --shadow: 0 1px 2px rgba(0,0,0,.5), 0 14px 36px rgba(0,0,0,.45); --radius: 16px;
+    --display: "Playfair Display", Georgia, "Times New Roman", serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { font: 14px/1.5 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text); background: var(--bg); min-height: 100vh; overflow-x: hidden; }
+  body::before { content: ""; position: fixed; inset: -20vh -10vw auto; height: 70vh; z-index: -1; pointer-events: none;
+    background: radial-gradient(40% 50% at 18% 25%, rgba(255,210,122,.16), transparent 70%),
+                radial-gradient(35% 45% at 82% 15%, rgba(184,134,47,.2), transparent 70%);
+    animation: drift 18s ease-in-out infinite alternate; }
+  @keyframes drift { to { transform: translate3d(3vw, 4vh, 0) scale(1.08); } }
+
+  header { position: sticky; top: 0; z-index: 5; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    background: color-mix(in srgb, var(--bg) 70%, transparent); border-bottom: 1px solid var(--line); }
+  .bar { max-width: 1320px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .logo { width: 38px; height: 38px; border-radius: 12px; display: grid; place-items: center; color: var(--gold-ink); font: 800 20px var(--display);
+    background: linear-gradient(135deg, var(--accent), var(--accent2)); background-size: 200% 200%; animation: shine 6s ease infinite;
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 40%, transparent); }
+  @keyframes shine { 50% { background-position: 100% 100%; } }
+  .brand { margin-right: auto; } .brand h1 { margin: 0; font: 700 19px var(--display); letter-spacing: .01em; color: var(--accent); }
+  .brand small { color: var(--muted); font-size: 12px; }
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 500; border: 1px solid var(--line); color: var(--muted); background: var(--card); }
+  .pill.on { color: var(--ok); border-color: color-mix(in srgb, var(--ok) 40%, transparent); background: color-mix(in srgb, var(--ok) 10%, transparent); }
+  .pill.dry { color: var(--warn); border-color: color-mix(in srgb, var(--warn) 40%, transparent); background: color-mix(in srgb, var(--warn) 10%, transparent); }
+
+  .timer { display: flex; align-items: center; gap: 10px; padding: 4px 12px 4px 4px; border-radius: 999px; background: var(--card); border: 1px solid var(--line); }
+  .ring { width: 32px; height: 32px; transform: rotate(-90deg); }
+  .ring circle { fill: none; stroke-width: 4; }
+  .ring .track { stroke: var(--line); } .ring .prog { stroke: url(#grad); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+  .timer b { font-variant-numeric: tabular-nums; font-size: 13px; } .timer span { display: block; font-size: 11px; color: var(--muted); line-height: 1.1; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-left: 12px; position: relative; }
+  .dot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: inherit; animation: ping 1.4s ease-out infinite; }
+  @keyframes ping { to { transform: scale(3); opacity: 0; } }
+
+  button { font: inherit; font-weight: 500; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card-solid); color: var(--text);
+    cursor: pointer; transition: transform .15s ease, box-shadow .2s ease, background .2s; position: relative; overflow: hidden; }
+  button:hover { transform: translateY(-1px); box-shadow: var(--shadow); }
+  button:active { transform: translateY(0) scale(.98); }
+  button.primary, a.primary { color: var(--gold-ink); font-weight: 700; border: 0; background: linear-gradient(135deg, var(--accent), var(--accent2)); background-size: 160% 160%;
+    box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 35%, transparent); }
+  button.primary:hover { background-position: 100% 0; }
+  button:disabled { cursor: progress; opacity: .85; }
+  button.loading::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+    animation: sweep 1.1s linear infinite; }
+  @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+  .ripple { position: absolute; border-radius: 50%; transform: scale(0); background: rgba(255,255,255,.45); animation: ripple .6s ease-out; pointer-events: none; }
+  @keyframes ripple { to { transform: scale(3.2); opacity: 0; } }
+
+  main { max-width: 1320px; margin: 0 auto; padding: 22px 20px 48px; }
+  .rules { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 10px; background: var(--card); border: 1px solid var(--line);
+    font-size: 12.5px; color: var(--muted); animation: rise .5s both; }
+  .chip b { color: var(--text); font-weight: 600; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 22px; }
+  .stat { background: var(--card); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px;
+    box-shadow: var(--shadow); position: relative; overflow: hidden; animation: rise .55s cubic-bezier(.2,.8,.2,1) both; transition: transform .2s ease; }
+  .stat:hover { transform: translateY(-3px); }
+  .stat::before { content: ""; position: absolute; inset: 0 0 auto; height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); opacity: .8; }
+  .stat .ico { font-size: 18px; opacity: .9; }
+  .stat b { display: block; font: 700 27px var(--display); font-variant-numeric: lining-nums tabular-nums; margin-top: 6px; }
+  .stat em { display: block; font-style: normal; color: var(--muted); font-size: 11.5px; margin-top: 2px; }
+  .stat span { color: var(--muted); font-size: 12.5px; }
+  .stat.hl b { background: linear-gradient(135deg, #fff1c9, var(--accent) 45%, var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+
+  nav { position: relative; display: inline-flex; gap: 2px; padding: 4px; border-radius: 12px; background: var(--card); border: 1px solid var(--line); margin-bottom: 14px; }
+  nav button { border: 0; background: transparent; padding: 7px 14px; z-index: 1; color: var(--muted); }
+  nav button:hover { transform: none; box-shadow: none; color: var(--text); }
+  nav button.active { color: var(--gold-ink); font-weight: 700; }
+  nav .slider { position: absolute; top: 4px; bottom: 4px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), var(--accent2));
+    transition: left .35s cubic-bezier(.2,.8,.2,1), width .35s cubic-bezier(.2,.8,.2,1); }
+  .count { display: inline-block; min-width: 18px; padding: 0 6px; margin-left: 4px; border-radius: 999px; font-size: 11px; background: var(--line); }
+  nav button.active .count { background: rgba(28,19,4,.18); }
+
+  .toolbar { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 14px; animation: rise .5s both; }
+  .toolbar.hidden { display: none; }
+  .field { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; color: var(--muted); font-weight: 500; }
+  .field.grow { flex: 1 1 180px; }
+  .field select, .field input { font: inherit; font-size: 13.5px; color: var(--text); background: var(--card-solid); border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px 12px; min-width: 150px; outline: none; transition: border-color .2s, box-shadow .2s; }
+  .field input[type=number] { min-width: 0; width: 120px; }
+  .field select:focus, .field input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent); }
+  .seg { display: inline-flex; padding: 3px; border-radius: 10px; background: var(--card-solid); border: 1px solid var(--line); }
+  .seg button { border: 0; background: transparent; padding: 5px 12px; font-size: 13px; color: var(--muted); border-radius: 8px; }
+  .seg button:hover { transform: none; box-shadow: none; color: var(--text); }
+  .seg button.on { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+  button.dir { width: 38px; height: 38px; padding: 0; font-size: 16px; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
+  button.dir.up { transform: rotate(180deg); }
+  .shown { padding: 10px 14px; font-size: 12.5px; color: var(--muted); border-bottom: 1px solid var(--line); }
+  .panel { background: var(--card); backdrop-filter: blur(10px); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 11px 14px; text-align: left; white-space: nowrap; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--card-solid); }
+  tbody tr { border-bottom: 1px solid var(--line); animation: rowIn .45s cubic-bezier(.2,.8,.2,1) both; transition: background .2s; }
+  tbody tr:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+  tbody tr.fresh { animation: rowIn .45s both, flash 2.2s ease .3s; }
+  @keyframes rowIn { from { opacity: 0; transform: translateX(-8px); } }
+  @keyframes flash { 0%, 100% { background: transparent; } 20% { background: color-mix(in srgb, var(--ok) 16%, transparent); } }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.title { white-space: normal; min-width: 240px; max-width: 440px; }
+  .key { font-weight: 600; } .sub { color: var(--muted); font-size: 12px; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+  a { color: inherit; text-decoration: none; } a:hover .badge { filter: brightness(1.15); }
+  .profit { font-weight: 700; color: var(--accent); }
+  .bar-wrap { width: 90px; height: 6px; border-radius: 6px; background: var(--line); overflow: hidden; display: inline-block; vertical-align: middle; margin-left: 8px; }
+  .bar-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--accent2), var(--accent)); transform-origin: left; animation: grow .9s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes grow { from { transform: scaleX(0); } }
+  .status { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; }
+  .status i { width: 7px; height: 7px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 20%, transparent); }
+  .actions { display: flex; gap: 6px; } .actions button { padding: 5px 10px; font-size: 12.5px; }
+  .empty { padding: 56px 24px; text-align: center; color: var(--muted); }
+  .empty .big { font-size: 34px; display: block; margin-bottom: 8px; animation: float 3s ease-in-out infinite; }
+  @keyframes float { 50% { transform: translateY(-6px); } }
+  .skel { height: 44px; margin: 10px 14px; border-radius: 10px; background: linear-gradient(90deg, var(--line) 25%, color-mix(in srgb, var(--line) 40%, transparent) 50%, var(--line) 75%);
+    background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+
+  .todo { display: grid; gap: 12px; margin-bottom: 22px; }
+  .todo h2 { margin: 0; font: 700 17px var(--display); color: var(--accent); }
+  .order { display: grid; gap: 10px; padding: 16px 18px; border-radius: var(--radius); background: var(--card); border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+    box-shadow: var(--shadow), inset 0 1px 0 rgba(255,210,122,.12); animation: rise .5s both; }
+  .order .head { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+  .order .head b { font: 700 18px var(--display); font-variant-numeric: lining-nums; }
+  .order .step { color: var(--text); } .order .step b { color: var(--accent); }
+  .order .quote { padding: 8px 12px; border-left: 3px solid var(--accent2); background: rgba(255,210,122,.06); border-radius: 0 8px 8px 0;
+    white-space: pre-wrap; word-break: break-word; font-size: 13px; }
+  .order .quote small { display: block; color: var(--muted); font-size: 11.5px; margin-bottom: 2px; }
+  .order .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  a.btn, a.primary { display: inline-block; font-weight: 500; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--card-solid); }
+  a.primary { background: linear-gradient(135deg, var(--accent), var(--accent2)); box-shadow: 0 6px 18px rgba(255,210,122,.22); }
+  .health { color: var(--muted); font-size: 12px; }
+
+  .toasts { position: fixed; right: 18px; bottom: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 20; }
+  .toast { padding: 12px 16px; border-radius: 12px; background: var(--card-solid); border: 1px solid var(--line); box-shadow: var(--shadow); max-width: 360px;
+    border-left: 4px solid var(--c, var(--accent)); animation: toastIn .35s cubic-bezier(.2,.8,.2,1) both; }
+  .toast.out { animation: toastOut .3s ease both; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(12px) scale(.96); } }
+  @keyframes toastOut { to { opacity: 0; transform: translateX(30px); } }
+
+  [hidden] { display: none !important; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+  button, a, input, select, summary { touch-action: manipulation; }
+  .monitor { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 22px; }
+  .monitor h2 { font: 700 30px var(--display); margin: 0 0 4px; }
+  .monitor p { margin: 0; color: var(--muted); }
+  #connection { font-size: 12px; color: var(--muted); }
+  #connection[data-status="live"] { color: var(--ok); }
+  #connection[data-status="offline"] { color: var(--warn); }
+  .connection-box { display: flex; gap: 12px; align-items: center; }
+  .cycle-health { margin: -4px 0 20px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); }
+  .cycle-health summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  .cycle-health p { margin: 10px 0 0; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+  .panel, .todo, .order, .toolbar { min-width: 0; }
+  #table, #toolbar { scroll-margin-top: 190px; }
+  @media (max-width: 720px) {
+    .bar { padding: 12px 16px; gap: 10px; }
+    .brand h1 { font-size: 17px; } .brand small { display: none; }
+    .bar .pills { order: 3; width: 100%; }
+    .bar > a { display: none; }
+    .bar > .primary { padding: 10px; font-size: 12px; }
+    .timer { margin-left: auto; } .ring { width: 26px; height: 26px; }
+    main { padding: 22px 16px calc(105px + env(safe-area-inset-bottom)); }
+    .monitor { align-items: flex-start; flex-direction: column; gap: 12px; }
+    .monitor h2 { font-size: 28px; }
+    .connection-box { width: 100%; justify-content: space-between; }
+    button, a.btn, a.primary, summary { min-height: 44px; }
+    .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .stat { padding: 14px; } .stat b { font-size: 26px; } .stat .ico { display: none; }
+    .rules { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 8px; scroll-snap-type: x proximity; }
+    .chip { flex-shrink: 0; scroll-snap-align: start; }
+    nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 10; margin: 0;
+      padding: 8px 8px calc(8px + env(safe-area-inset-bottom)); border-radius: 18px 18px 0 0;
+      background: rgba(20,16,10,.97); backdrop-filter: blur(16px); display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    nav button { padding: 8px 2px; font-size: 11px; min-width: 0; }
+    nav button.active { background: var(--accent); border-radius: 10px; }
+    nav .slider { display: none; } nav .count { padding: 0 4px; margin-left: 2px; font-size: 10px; }
+    .toolbar { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .field { min-width: 0; } .field.grow { grid-column: 1 / -1; }
+    .field select, .field input, .field input[type=number] { width: 100%; min-width: 0; min-height: 44px; font-size: 16px; }
+    .seg { flex-wrap: wrap; } .seg button { padding: 6px; font-size: 12px; }
+    .panel { overflow: visible; background: transparent; border: 0; box-shadow: none; }
+    table, tbody { display: block; width: 100%; min-width: 0; }
+    thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;
+      padding: 16px; margin: 0 0 12px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); }
+    tbody td, tbody td.num, tbody td.title { display: block; padding: 0; border: 0; text-align: left; min-width: 0; max-width: none; white-space: normal; overflow-wrap: anywhere; }
+    tbody td::before { content: attr(data-label); display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+    tbody td:last-child { grid-column: 1 / -1; }
+    .actions { flex-wrap: wrap; } .actions button { padding: 10px 12px; }
+    .toasts { bottom: calc(90px + env(safe-area-inset-bottom)); left: 16px; right: 16px; }
+    .toast { max-width: none; }
+    .order { padding: 16px; } .order .head b { overflow-wrap: anywhere; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+  /* Quiet, native-feeling visual system inspired by Apple's readable hierarchy. */
+  :root {
+    color-scheme: light;
+    --bg: #f5f5f7; --bg2: #fff; --card: rgba(255,255,255,.84); --card-solid: #fff;
+    --text: #1d1d1f; --muted: #6e6e73; --line: rgba(29,29,31,.09);
+    --accent: #06c; --accent2: #0077ed; --gold-ink: #fff;
+    --ok: #248a3d; --warn: #b35c00; --bad: #d70015;
+    --shadow: 0 2px 12px rgba(0,0,0,.045); --radius: 20px;
+    --display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+  }
+  html { scroll-behavior: smooth; }
+  body { color: var(--text); background: var(--bg); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif; }
+  body::before { inset: 0 0 auto; height: 520px; opacity: .62; background: radial-gradient(ellipse at 50% -25%, #dcecff 0, transparent 70%); animation: none; }
+  header { background: rgba(255,255,255,.82); border-color: rgba(29,29,31,.08); }
+  .bar { max-width: 1440px; min-height: 72px; padding-top: 12px; padding-bottom: 12px; }
+  .logo { border-radius: 13px; background: #1d1d1f; color: #fff; box-shadow: none; animation: none; }
+  .brand h1 { color: var(--text); font: 650 18px/1.2 var(--display); letter-spacing: -.025em; }
+  button { border-color: rgba(29,29,31,.12); background: #fff; border-radius: 12px; transition: transform .18s ease, background .18s ease, box-shadow .18s ease; }
+  button:hover { box-shadow: 0 3px 12px rgba(0,0,0,.08); }
+  button.primary, a.primary { color: #fff; background: #06c; box-shadow: none; }
+  button.primary:hover { background: #0077ed; }
+  .timer { background: rgba(255,255,255,.76); border-color: var(--line); }
+  .ring .track { stroke: #e5e5ea; } .ring .prog { stroke: #06c; }
+  .pill { background: #f2f2f7; border-color: transparent; color: var(--muted); }
+  .pill.on { color: #248a3d; background: #e8f5eb; }
+  .pill.dry { color: #9a5a00; background: #fff3db; }
+  main { max-width: 1440px; padding-top: 32px; }
+  .monitor { margin-bottom: 24px; }
+  .monitor h2 { color: var(--text); font: 650 clamp(30px,4vw,42px)/1.08 var(--display); letter-spacing: -.045em; }
+  .monitor p { font-size: 15px; }
+  #connection[data-status="live"] { color: #248a3d; }
+  #connection[data-status="offline"] { color: #9a5a00; }
+  #refreshBtn { color: #06c; background: transparent; border: 0; }
+  .cycle-health { background: rgba(255,255,255,.68); border-color: var(--line); }
+  .rules { gap: 8px; }
+  .chip { background: rgba(255,255,255,.74); border-color: var(--line); border-radius: 999px; }
+  .chip b { color: var(--text); }
+  .stat { background: rgba(255,255,255,.92); backdrop-filter: blur(16px); border-color: var(--line); box-shadow: var(--shadow); }
+  .stat::before { display: none; }
+  .stat b { font: 650 29px/1.15 var(--display); letter-spacing: -.035em; color: var(--text); }
+  .stat.hl b { color: var(--text); background: none; -webkit-text-fill-color: currentColor; }
+  nav { background: rgba(255,255,255,.78); border-color: var(--line); box-shadow: 0 2px 12px rgba(0,0,0,.04); }
+  nav button { color: var(--muted); }
+  nav button.active { color: #06c; font-weight: 650; }
+  nav .slider { background: rgba(0,102,204,.1); border-radius: 9px; }
+  .count { color: var(--muted); background: #f2f2f7; }
+  nav button.active .count { color: #06c; background: transparent; }
+  .field { color: var(--muted); }
+  .field select, .field input { color: var(--text); background: #fff; border-color: rgba(29,29,31,.14); border-radius: 12px; }
+  .field select:focus, .field input:focus { border-color: #06c; box-shadow: 0 0 0 3px rgba(0,102,204,.13); }
+  .seg { background: #e9e9ee; border: 0; border-radius: 11px; }
+  .seg button.on { background: #fff; color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+  .panel { background: rgba(255,255,255,.93); border-color: var(--line); box-shadow: var(--shadow); }
+  th { color: #6e6e73; background: rgba(250,250,252,.96); }
+  tbody tr:hover { background: rgba(0,102,204,.035); }
+  .badge { border-radius: 7px; }
+  .order, .todo .order { background: rgba(255,255,255,.94); border-color: rgba(0,102,204,.18); box-shadow: var(--shadow); }
+  .order .head b, .todo h2 { color: var(--text); }
+  .order .quote { background: #f5f5f7; border-color: #b7ccec; }
+  .toasts { bottom: calc(24px + env(safe-area-inset-bottom)); }
+  :focus-visible { outline: 3px solid rgba(0,102,204,.5); outline-offset: 3px; }
+  @media (max-width: 720px) {
+    body::before { height: 340px; }
+    .bar { min-height: 60px; background: rgba(255,255,255,.9); }
+    main { padding-top: 24px; }
+    .monitor h2 { font-size: 32px; }
+    nav { background: rgba(255,255,255,.94); border-color: rgba(29,29,31,.08); box-shadow: 0 -4px 24px rgba(0,0,0,.07); }
+    nav button.active { color: #06c; background: #eaf3ff; }
+    .stat { border-radius: 18px; }
+    .stat b { font-size: 25px; }
+    .panel { background: transparent; }
+    tbody tr { background: rgba(255,255,255,.95); border-color: var(--line); box-shadow: var(--shadow); }
+    .toasts { bottom: calc(78px + env(safe-area-inset-bottom)); }
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { color-scheme: dark; --bg:#000; --bg2:#1c1c1e; --card:rgba(28,28,30,.92); --card-solid:#1c1c1e;
+      --text:#f5f5f7; --muted:#a1a1a6; --line:rgba(255,255,255,.1); --shadow:0 2px 16px rgba(0,0,0,.25); }
+    body::before { background: radial-gradient(ellipse at 50% -25%, #172a43 0, transparent 72%); }
+    header,.bar { background: rgba(28,28,30,.94); border-color:var(--line); }
+    .logo { background:#f5f5f7; color:#1d1d1f; }
+    .brand h1,.brand small,.stat b,.stat.hl b,.order .head b,.todo h2 { color:var(--text); }
+    .timer,.stat,.cycle-health,.chip,.panel,.order,.todo .order { background:rgba(28,28,30,.94); border-color:var(--line); }
+    .panel tbody tr { background:rgba(28,28,30,.94); border-color:var(--line); }
+    button,.field select,.field input { color:var(--text); background:#2c2c2e; border-color:var(--line); }
+    .pill { background:#2c2c2e; }
+    nav { background:rgba(28,28,30,.96); border-color:var(--line); }
+    nav button.active { color:#64aaff; }
+    nav button.active .count { color:#64aaff; }
+    nav .slider { background:rgba(10,132,255,.18); }
+    .seg { background:#2c2c2e; }
+    .seg button.on { color:var(--text); background:#48484a; }
+    th { background:#232326; }
+    .order .quote { background:#232326; }
+    #refreshBtn { color:#64aaff; }
+    @media(max-width:720px) { nav button.active { color:#64aaff; background:rgba(10,132,255,.18); } }
+  }
+  @media (max-width: 720px) and (prefers-color-scheme: dark) {
+    .bar { background: rgba(28,28,30,.96) !important; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute"><defs><linearGradient id="grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd27a"/><stop offset="1" stop-color="#b8862f"/></linearGradient></defs></svg>
+<header>
+  <div class="bar">
+    <div class="logo">D</div>
+    <div class="brand"><h1>DragDiller · арбитраж</h1><small id="lastscan">загрузка…</small></div>
+    <div class="pills" id="mode"></div>
+    <div class="timer" id="timer" title="Автоматическая проверка связок">
+      <svg class="ring" viewBox="0 0 36 36"><circle class="track" cx="18" cy="18" r="15"/><circle class="prog" id="ringProg" cx="18" cy="18" r="15" stroke-dasharray="94.25" stroke-dashoffset="94.25"/></svg>
+      <div><b id="timerText">—</b><span id="timerSub">до проверки</span></div>
+    </div>
+    <a href="/covers" target="_blank" rel="noopener"><button type="button">🎨 Обложки</button></a>
+    <button class="primary" id="scanBtn">Сканировать сейчас</button>
+  </div>
+</header>
+<main>
+  <section class="monitor" aria-label="Мониторинг">
+    <div><h2>Всё под контролем</h2><p>Продажи, карточки и работа бота</p></div>
+    <div class="connection-box"><span id="connection" role="status" aria-live="polite">Подключаемся…</span><button id="refreshBtn" type="button">Обновить</button></div>
+  </section>
+  <details class="cycle-health"><summary id="scanSummary">Состояние сканирования загружается…</summary><p id="cycleDetail"></p></details>
+  <div class="rules" id="rules"></div>
+  <div class="stats" id="stats"></div>
+  <section class="todo" id="todo" hidden></section>
+  <nav id="tabs" role="tablist" aria-label="Разделы панели">
+    <div class="slider" id="slider"></div>
+    <button data-tab="ops" class="active">Связки <span class="count" id="cOps">0</span></button>
+    <button data-tab="listings">Карточки <span class="count" id="cList">0</span></button>
+    <button data-tab="orders">Заказы <span class="count" id="cOrd">0</span></button>
+    <button data-tab="platforms">Площадки <span class="count" id="cPl">0</span></button>
+  </nav>
+  <div id="supplierResults" hidden></div>
+  <div class="toolbar" id="toolbar">
+    <label class="field"><span>Где купить</span><select id="fBuy"><option value="">Все площадки</option></select></label>
+    <label class="field"><span>Где продать</span><select id="fSell"><option value="">Все площадки</option></select></label>
+    <label class="field grow"><span>Поиск</span><input id="fText" type="search" placeholder="apple, psn, 100INR…"></label>
+    <label class="field"><span>Номинал поставщика</span><input id="fAmount" type="number" min="0" step="any" placeholder="100"></label><button id="findSuppliers">Найти поставщиков</button>
+    <label class="field"><span>Мин. маржа, %</span><input id="fMargin" type="number" min="0" step="0.5" placeholder="0"></label>
+    <div class="field"><span>Сортировка</span>
+      <div class="seg" id="fSort">
+        <button data-sort="margin" class="on">% маржи</button><button data-sort="profit">₽ прибыли</button><button data-sort="price">Цена</button>
+      </div>
+    </div>
+    <button class="dir" id="fDir" title="Порядок сортировки">↓</button>
+  </div>
+  <div class="panel" id="table" role="tabpanel" tabindex="0" aria-live="polite"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>
+</main>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+<script>
+let state = null, tab = 'ops', seenKeys = null, shown = {};
+const F = Object.assign({buy: '', sell: '', text: '', margin: '', sort: 'margin', dir: 'desc'},
+  (() => { try { return JSON.parse(localStorage.getItem('arbFilters') || '{}'); } catch { return {}; } })());
+const saveF = () => { try { localStorage.setItem('arbFilters', JSON.stringify(F)); } catch {} };
+
+function filteredOps() {
+  const q = F.text.trim().toLowerCase(), minM = parseFloat(F.margin);
+  const key = {margin: r => r.margin_pct, profit: r => r.profit, price: r => r.sell_price}[F.sort];
+  return state.opportunities
+    .filter(r => (!F.buy || r.buy_platform === F.buy) && (!F.sell || r.sell_platform === F.sell)
+      && (!q || (r.key + ' ' + r.buy_title).toLowerCase().includes(q)) && (isNaN(minM) || r.margin_pct >= minM))
+    .sort((a, b) => (F.dir === 'desc' ? -1 : 1) * (key(a) - key(b)));
+}
+
+function fillSelect(sel, values, current) {
+  const opts = ['<option value="">Все площадки</option>'].concat(values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`)).join('');
+  if (sel.dataset.opts !== opts) { sel.innerHTML = opts; sel.dataset.opts = opts; }
+  sel.value = values.includes(current) ? current : '';
+}
+
+function setupFilters() {
+  $('fText').value = F.text; $('fMargin').value = F.margin; $('fDir').classList.toggle('up', F.dir === 'asc');
+  document.querySelectorAll('#fSort button').forEach(b => b.classList.toggle('on', b.dataset.sort === F.sort));
+  const upd = () => { saveF(); render(); };
+  $('findSuppliers').onclick = () => searchSuppliers().catch(() => toast('Поставщики недоступны', 'var(--bad)'));
+  $('fBuy').onchange = e => { F.buy = e.target.value; upd(); };
+  $('fSell').onchange = e => { F.sell = e.target.value; upd(); };
+  $('fText').oninput = e => { F.text = e.target.value; upd(); };
+  $('fMargin').oninput = e => { F.margin = e.target.value; upd(); };
+  document.querySelectorAll('#fSort button').forEach(b => b.onclick = () => {
+    F.sort = b.dataset.sort; document.querySelectorAll('#fSort button').forEach(x => x.classList.toggle('on', x === b)); upd();
+  });
+  $('fDir').onclick = () => { F.dir = F.dir === 'desc' ? 'asc' : 'desc'; $('fDir').classList.toggle('up', F.dir === 'asc'); upd(); };
+}
+const COLORS = { playerok: '#7fb2ff', funpay: '#ffa15c', plati: '#7fe3a9', starvell: '#c9a0ff', kupikod: '#ffd27a', lzt: '#6fe0d2', ggsel: '#ff8f8f', donatov: '#f0b3d6', paygame: '#9fd4ff' };
+const rub = v => v == null ? '—' : Math.round(v).toLocaleString('ru-RU') + ' ₽';
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const badge = p => `<span class="badge" style="--c:${COLORS[p] || '#c8bca0'}">${esc(p)}</span>`;
+const $ = id => document.getElementById(id);
+
+function toast(text, color) {
+  const t = document.createElement('div'); t.className = 'toast'; t.textContent = text; if (color) t.style.setProperty('--c', color);
+  $('toasts').appendChild(t); setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 300); }, 3800);
+}
+
+function countUp(el, to, fmt) {
+  const from = shown[el.id] ?? 0; shown[el.id] = to;
+  if (from === to || matchMedia('(prefers-reduced-motion: reduce)').matches) { el.textContent = fmt(to); return; }
+  const t0 = performance.now(), dur = 900;
+  const step = now => { const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = fmt(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
+// Статусы по-русски. Кнопка «Отправить код» — только у заказов, которые ещё ждут выдачи.
+const ORDER_OPEN = ['new', 'buying', 'bought', 'attention', 'delivering', 'delivery_unknown'];
+const ORDER_LABEL = {new: 'ждёт вашей оплаты', buying: 'покупаю', bought: 'оплачено, не выдано', attention: 'проверьте покупку',
+  delivering: 'исход выдачи проверьте', delivery_unknown: 'исход выдачи неизвестен', delivered: 'выдано', cancelled: 'отменён покупателем'};
+const ORDER_COLOR = {delivered: 'var(--ok)', cancelled: 'var(--muted)'};
+const LISTING_LABEL = {active: 'в продаже', dry_run: 'тест', gone: 'продано или снято', retired: 'заменена новой',
+  paused: 'на паузе', stale: 'снята: невыгодно', dry_closed: 'тест закрыт'};
+const PAY = {sbp: 'СБП', card: 'картой'};
+
+// Заказы, где нужен владелец: сколько и кому заплатить, что написал покупатель, что прислал продавец
+function renderTodo() {
+  const open = state.orders.filter(o => ORDER_OPEN.includes(o.status)), el = $('todo');
+  el.hidden = !open.length;
+  if (!open.length) { el.innerHTML = ''; return; }
+  const how = PAY[state.pay_method] ? (state.pay_method === 'sbp' ? ' по СБП' : ' картой') : '';
+  el.innerHTML = `<h2>Ждут вас: ${open.length}</h2>` + open.map(o => {
+    const paid = !!o.purchase_ref, src = o.source_platform;
+    let step;
+    if (!src) step = 'Поставщика в последнем скане нет. Купите товар сами и отправьте код.';
+    else if (!paid) step = `<b>1.</b> Оплатите у ${esc(src)}: <b>${rub(o.pay)}</b>${how}. `
+      + (o.tracked ? (o.needs_buyer_data ? 'Оплату увижу сам и перешлю продавцу данные покупателя.' : 'Оплату увижу сам, код заберу и отправлю покупателю.')
+                   : 'Потом вставьте сюда код: эту площадку я не вижу.');
+    else if (o.needs_buyer_data) step = o.buyer_data ? `Оплачено (заказ ${esc(o.purchase_ref)}). Данные покупателя отправлены продавцу — жду пополнения.`
+      : `Оплачено (заказ ${esc(o.purchase_ref)}). Жду, пока покупатель пришлёт ID в чат сделки.`;
+    else step = o.supplier_text ? `Оплачено (заказ ${esc(o.purchase_ref)}). Код получен — осталось отправить покупателю.`
+      : `Оплачено (заказ ${esc(o.purchase_ref)}). Жду код от продавца.`;
+    return `<div class="order"><div class="head"><b>№ ${o.id}</b><span class="key">${esc(o.key)}</span>${badge(o.platform)}
+        <span>продано за <b>${rub(o.price)}</b></span><span class="sub">покупатель ${esc(o.buyer)}</span>
+        <span class="status" style="--c:var(--warn)"><i></i>${esc(ORDER_LABEL[o.status] || o.status)}</span></div>
+      <div class="step">${step}</div>
+      ${o.buyer_data ? `<div class="quote"><small>Покупатель написал</small>${esc(o.buyer_data)}</div>` : ''}
+      ${o.supplier_text ? `<div class="quote"><small>Прислал продавец</small>${esc(o.supplier_text)}</div>` : ''}
+      ${o.note ? `<div class="sub">${esc(o.note)}</div>` : ''}
+      <div class="row">${o.source_url && !paid ? `<a class="primary" href="${esc(o.source_url)}" target="_blank" rel="noopener">Оплатить ${rub(o.pay)}</a>` : ''}
+        ${o.supplier_text ? `<button class="primary" onclick="forward(${o.id})">Отправить покупателю</button>` : ''}
+        <button onclick="deliver(${o.id})">Ввести код вручную</button>
+        ${o.platform === 'playerok' ? `<a class="btn" href="https://playerok.com/deal/${esc(o.external_id)}" target="_blank" rel="noopener">Сделка на Playerok</a>` : ''}</div></div>`;
+  }).join('');
+}
+async function forward(id) {
+  const o = state.orders.find(x => x.id === id); if (!o || !o.supplier_text) return;
+  const r = await (await fetch(`/api/orders/${id}/deliver`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text: o.supplier_text})})).json();
+  toast(r.result === 'ok' ? 'Отправлено покупателю' : r.result, r.result === 'ok' ? 'var(--ok)' : 'var(--bad)'); load();
+}
+
+let loading = false, lastUpdate = 0;
+async function load() {
+  if (loading) return;
+  loading = true;
+  try {
+    const response = await fetch('/api/data', {cache: 'no-store', signal: AbortSignal.timeout(15000)});
+    if (response.status === 401) { location.assign('/login'); return; }
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    const incoming = await response.json();
+    if (!incoming.mode || !incoming.stats || !Array.isArray(incoming.opportunities)) throw new Error('Invalid data');
+    state = incoming; lastUpdate = Date.now();
+    $('connection').dataset.status = 'live';
+    $('connection').textContent = 'Обновлено в ' + new Date(lastUpdate).toLocaleTimeString('ru-RU');
+  } catch {
+    $('connection').dataset.status = 'offline';
+    $('connection').textContent = lastUpdate ? 'Нет связи · показаны данные на ' + new Date(lastUpdate).toLocaleTimeString('ru-RU') : 'Нет связи с ботом · повторим через 20 с';
+    return;
+  } finally { loading = false; }
+  const m = state.mode, s = state.stats, r = state.rules || {};
+  $('mode').innerHTML = (m.dry_run ? '<span class="pill dry">тестовый режим</span>' : '<span class="pill on">боевой режим</span>') +
+    `<span class="pill ${m.auto_list ? 'on' : ''}">автовыставление</span><span class="pill ${m.auto_buy ? 'on' : ''}">автопокупка</span>`;
+  const c = state.cycle || {}, mins = v => Math.floor(v / 60) + ':' + String(Math.round(v % 60)).padStart(2, '0');
+  $('lastscan').textContent = (state.last_scan ? 'последний скан ' + new Date(state.last_scan * 1000).toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'}) : 'скана ещё не было')
+    + (c.total ? ` · цикл ${mins(c.total)}: скан ${mins(c.scan)}, цены ${mins(c.prices)}, карточки ${mins(c.cards)}` : '');
+  const publication = c.publication || {};
+  if (Object.keys(publication).length) {
+    $('lastscan').textContent += ` · выставлено ${publication.published || 0}, уже в продаже ${publication.already_listed || 0}, готовятся обложки ${publication.cover_pending || 0}, пауза после отказа ${publication.blocked || 0}, пауза 429 ${publication.cooldown || 0}, не выставлено ${publication.not_published || 0}`;
+    if (publication.limit_remaining) $('lastscan').textContent += `, лимит карточек: отложено ${publication.limit_remaining}`;
+    if (publication.auto_list_off) $('lastscan').textContent += ' · автовыставление выключено';
+    if (publication.audit_only) $('lastscan').textContent += ' · только анализ';
+  }
+  $('scanSummary').textContent = (state.scanning ? 'Идёт проверка · ' : '') + (state.last_scan ? 'Последний скан: ' + new Date(state.last_scan * 1000).toLocaleString('ru-RU') : 'После запуска сканов ещё не было');
+  $('cycleDetail').textContent = $('lastscan').textContent;
+  $('cPl').textContent = (state.platforms || []).length;
+  $('rules').innerHTML = [
+    ['🛒', 'Продажа', (r.sell_platforms && r.sell_platforms.length ? r.sell_platforms.join(', ') : 'все площадки')],
+    ['📦', 'Закупка', 'любая площадка'],
+    ['📈', 'Чистая прибыль', 'от ' + (r.min_margin_pct ?? '—') + '% к закупке'],
+    ['💳', 'Оплата поставщикам', PAY[state.pay_method] || state.pay_method || '—'],
+    ['📨', 'Выдача кода', m.auto_deliver ? 'сама, после вашей оплаты' : 'по кнопке'],
+    ['⏱', 'Проверка', 'каждые ' + (r.interval_minutes ?? '—') + ' мин'],
+  ].map(([i, k, v], n) => `<span class="chip" style="animation-delay:${n * 60}ms">${i} ${k}: <b>${esc(v)}</b></span>`).join('');
+
+  const ops = state.opportunities;
+  const best = ops.reduce((a, o) => (o.profit > (a?.profit ?? -1e9) ? o : a), null);
+  const total = ops.reduce((a, o) => a + o.profit, 0);
+  if (!$('stats').children.length) {
+    $('stats').innerHTML = [
+      ['sNet', '💰', 'Чистая прибыль по выданным', 'hl'], ['sRev', '📊', 'Выручка'], ['sWait', '⏳', 'Заказов ждут вас'],
+      ['sList', '🗂', 'Карточек в продаже'], ['sOps', '💡', 'Выгодных связок'], ['sProfit', '🏆', 'Прибыль, если продать все'],
+    ].map(([id, ico, label, cls], n) => `<div class="stat ${cls || ''}" style="animation-delay:${n * 70}ms"><span class="ico">${ico}</span><b id="${id}">0</b><span>${label}</span><em id="${id}Sub"></em></div>`).join('');
+  }
+  countUp($('sOps'), ops.length, v => Math.round(v));
+  countUp($('sProfit'), total, rub);
+  countUp($('sNet'), s.profit ?? 0, rub);
+  countUp($('sRev'), s.revenue, rub);
+  countUp($('sWait'), s.waiting ?? 0, v => Math.round(v));
+  countUp($('sList'), s.listings, v => Math.round(v));
+  $('sNetSub').textContent = `после комиссий · выдано ${s.delivered} из ${s.orders}`;
+  $('sRevSub').textContent = `закупка ${rub(s.cost)} · отменено ${s.cancelled ?? 0}`;
+  $('sWaitSub').textContent = s.waiting ? 'оплатите поставщику или отправьте код' : 'всё выдано';
+  $('sListSub').textContent = `на паузе ${s.paused ?? 0}`;
+  $('sOpsSub').textContent = `из ${Math.round(s.offers).toLocaleString('ru-RU')} объявлений · ждут проверки ${state.unverified_opportunities || 0}`;
+  $('sProfitSub').textContent = best ? `лучшая: +${rub(best.profit)}` : '';
+  renderTodo();
+  $('cOps').textContent = ops.length; $('cList').textContent = state.listings.filter(l => l.status === 'active' || l.status === 'dry_run').length; $('cOrd').textContent = state.orders.length;
+  const uniq = f => [...new Set(ops.map(f))].sort();
+  fillSelect($('fBuy'), [...new Set([...uniq(o => o.buy_platform), ...(state.mode.platforms || [])])].sort(), F.buy);
+  fillSelect($('fSell'), uniq(o => o.sell_platform), F.sell);
+
+  const keys = new Set(ops.map(o => o.key + '>' + o.sell_platform));
+  const fresh = seenKeys ? [...keys].filter(k => !seenKeys.has(k)) : [];
+  if (fresh.length) toast(`Новых связок: ${fresh.length}`, 'var(--ok)');
+  render(new Set(fresh)); seenKeys = keys;
+  setScanning(state.scanning);
+}
+
+async function searchSuppliers() {
+  const params = new URLSearchParams({q: F.text, platform: F.buy});
+  if ($('fAmount').value !== '') params.set('amount', $('fAmount').value);
+  const response = await fetch('/api/suppliers?' + params);
+  if (!response.ok) { toast('Не удалось найти поставщиков', 'var(--bad)'); return; }
+  const data = await response.json();
+  const box = $('supplierResults');
+  box.innerHTML = `<h3>Найдено товаров: ${data.total} · показано ${data.products.length}</h3>`
+    + data.products.map(p => `<p><button data-suppliers="${esc(p.key)}">${esc(p.key)}</button> · допустимо ${p.best.length} из двух: ${p.best.map(o => `${esc(o.platform)} ${o.buy_cost.toFixed(2)} ₽`).join(', ') || 'нет подтверждённых поставщиков'}</p>`).join('');
+  box.hidden = false;
+}
+
+async function showSuppliers(key) {
+  const response = await fetch('/api/suppliers/' + encodeURIComponent(key) + '?platform=' + encodeURIComponent(F.buy));
+  if (!response.ok) { toast('Не удалось загрузить поставщиков', 'var(--bad)'); return; }
+  const data = await response.json();
+  const box = $('supplierResults');
+  const labels = {active: 'активность подтверждена', inactive: 'не заходил 3 дня или дольше', unknown: 'время входа неизвестно'};
+  box.innerHTML = `<h3>${esc(key)} · ${data.best.length} допустимых из двух</h3>`
+    + (data.observed_at ? `<p class="sub">Снимок: ${esc(new Date(data.observed_at * 1000).toLocaleString())}</p>` : '<p>Свежего снимка ещё нет</p>')
+    + data.offers.map(o => `<p><a href="${esc(o.url)}" target="_blank" rel="noopener">${badge(o.platform)} ${esc(o.title)}</a> · полная закупка ${o.buy_cost.toFixed(2)} ₽ · ${esc(labels[o.activity])} · ${data.best.some(b => b.platform === o.platform && b.offer_id === o.offer_id) ? 'выбран' : o.eligible ? 'дороже двух лучших' : 'не допущен'}</p>`).join('');
+  box.hidden = false;
+}
+document.addEventListener('click', e => {
+  const button = e.target.closest('[data-suppliers]');
+  if (button) showSuppliers(button.dataset.suppliers).catch(() => toast('Поставщики недоступны', 'var(--bad)'));
+});
+
+function render(fresh = new Set()) {
+  if (!state) return;
+  renderContent(fresh);
+  $('table').querySelectorAll('table').forEach(table => {
+    const labels = [...table.querySelectorAll('thead th')].map(th => th.textContent);
+    table.querySelectorAll('tbody tr').forEach(row => [...row.cells].forEach((cell, i) => {
+      cell.dataset.label = labels[i] || 'Действия';
+    }));
+  });
+}
+function renderContent(fresh = new Set()) {
+  const el = $('table');
+  const empty = (icon, text) => `<div class="empty"><span class="big">${icon}</span>${text}</div>`;
+  const d = i => `style="animation-delay:${Math.min(i, 20) * 35}ms"`;
+  $('toolbar').classList.toggle('hidden', tab !== 'ops');
+  if (tab === 'ops') {
+    if (!state.opportunities.length) { el.innerHTML = empty('🔭', 'Выгодных связок сейчас нет. Бот проверит снова по расписанию.'); return; }
+    const rows = filteredOps();
+    if (!rows.length) { el.innerHTML = empty('🧐', 'Под фильтры ничего не подходит. Измените площадку или маржу.'); return; }
+    const maxM = Math.max(...rows.map(r => r.margin_pct), 1);
+    el.innerHTML = `<div class="shown">Показано ${rows.length} из ${state.opportunities.length} · сумма прибыли ${rub(rows.reduce((a, r) => a + r.profit, 0))}</div><table><thead><tr><th>Товар</th><th>Где купить</th><th class="num">Закупка</th><th>Где продать</th><th class="num">Цена</th><th class="num">Конкуренты</th><th class="num">Прибыль</th><th></th></tr></thead><tbody>` +
+      rows.map((r, i) => `<tr class="${fresh.has(r.key + '>' + r.sell_platform) ? 'fresh' : ''}" ${d(i)}>
+        <td><div class="key">${esc(r.key)}</div><button data-suppliers="${esc(r.key)}">Два поставщика</button></td>
+        <td class="title"><a href="${esc(r.buy_url)}" target="_blank" rel="noopener">${badge(r.buy_platform)}</a> <span class="sub">${esc(r.buy_title).slice(0, 70)}</span></td>
+        <td class="num">${rub(r.buy_price)}</td><td>${badge(r.sell_platform)}</td><td class="num"><b>${rub(r.sell_price)}</b></td>
+        <td class="num">${r.best_competitor ? rub(r.best_competitor) + ' <span class="sub">· ' + r.competitors + '</span>' : '<span class="sub">нет</span>'}</td>
+        <td class="num"><span class="profit">+${r.profit.toFixed(2)} ₽</span> <span class="sub">${r.margin_pct}%</span>
+          <span class="bar-wrap"><span class="bar-fill" style="display:block;width:${Math.max(6, r.margin_pct / maxM * 100)}%;animation-delay:${Math.min(i, 20) * 35 + 150}ms"></span></span></td>
+        <td>${r.status === 'listed' ? '<span class="status" style="--c:var(--ok)"><i></i>выставлено</span>' :
+          `<div class="actions"><button onclick="act('/api/opportunities/${r.id}/list', this)">Выставить</button><button title="Пропустить" onclick="act('/api/opportunities/${r.id}/skip', this)">✕</button></div>`}</td></tr>`).join('') + '</tbody></table>';
+  } else if (tab === 'listings') {
+    const rows = state.listings;
+    el.innerHTML = rows.length ? `<table><thead><tr><th>Площадка</th><th>Товар</th><th>Название</th><th class="num">Цена</th><th>Поставщик</th><th class="num">Прибыль</th><th>Статус</th></tr></thead><tbody>` +
+      rows.map((r, i) => `<tr ${d(i)}><td>${badge(r.platform)}</td><td class="key">${esc(r.key)}</td><td class="title">${esc(r.title)}</td><td class="num">${rub(r.price)}</td>
+        <td>${r.buy_platform ? `<a href="${esc(r.buy_url)}" target="_blank" rel="noopener">${badge(r.buy_platform)} ${rub(r.buy_price)}</a>` : '—'}</td>
+        <td class="num">${r.profit != null ? `<span class="profit">+${rub(r.profit)}</span> <span class="sub">${r.margin_pct}%</span>` : '—'}</td>
+        <td><span class="status" style="--c:${r.status === 'active' ? 'var(--ok)' : r.status === 'dry_run' ? 'var(--warn)' : 'var(--muted)'}"><i></i>${esc(LISTING_LABEL[r.status] || r.status)}</span></td></tr>`).join('') + '</tbody></table>'
+      : empty('🗂', 'Бот пока не выставлял карточек сам');
+  } else if (tab === 'platforms') {
+    const rows = state.platforms || [], ago = t => t ? Math.max(0, Math.round((Date.now() / 1000 - t) / 60)) + ' мин назад' : 'ещё не было';
+    el.innerHTML = `<table><thead><tr><th>Площадка</th><th>Роль</th><th class="num">Объявлений</th><th class="num">Скан</th><th>Последний скан</th><th>Темп</th><th>Комиссия оплаты</th></tr></thead><tbody>` +
+      rows.map((r, i) => `<tr ${d(i)}><td>${badge(r.name)}</td><td class="sub">${r.can_sell ? 'продажа и закупка' : 'закупка'}${r.can_buy ? ' · автопокупка' : ''}</td>
+        <td class="num">${r.offers.toLocaleString('ru-RU')}</td><td class="num">${r.seconds ? r.seconds + ' с' : '—'}</td><td class="sub">${ago(r.scanned_at)}</td>
+        <td><span class="status" style="--c:${r.slowdown > 1 || r.write_slowdown > 1 ? 'var(--warn)' : 'var(--ok)'}"><i></i>${r.slowdown > 1 || r.write_slowdown > 1
+          ? `просит реже: чтение ×${r.slowdown}, действия ×${r.write_slowdown}` : 'обычный'}</span></td>
+        <td>${r.pay_checked ? 'по каждому лоту отдельно' : (r.buy_fee_pct ? '+' + r.buy_fee_pct + '%' : 'нет')} <span class="sub">${PAY[state.pay_method] || ''}</span></td></tr>`).join('') + '</tbody></table>';
+    const coverage = state.coverage || {};
+    if (coverage.platforms) {
+      el.innerHTML += '<h2>Покрытие последнего цикла</h2><p class="sub">Игры собраны в каталоге; пригодность каждого предложения для продажи проверяется отдельно. «Не найдены» означает отсутствие нормализованных товаров, в том числе при ошибках площадки.</p>' +
+        Object.entries(coverage.platforms).map(([name, info]) => `<details style="margin:12px 0;padding:12px"><summary>${esc(name)} · ${info.games.length} игр и тарифов · ${info.offers} объявлений</summary><p>${info.games.map(esc).join(', ') || 'Данных нет'}</p><p class="sub">Не найдены в настроенных разделах: ${info.missing_configured.map(esc).join(', ') || 'нет'}</p></details>`).join('');
+    }
+  } else {
+    const rows = state.orders;
+    el.innerHTML = rows.length ? `<table><thead><tr><th>#</th><th>Площадка</th><th>Товар</th><th>Покупатель</th><th class="num">Цена</th><th>Поставщик</th><th>Статус</th></tr></thead><tbody>` +
+      rows.map((r, i) => `<tr ${d(i)}><td>${r.id}</td><td>${badge(r.platform)}</td><td class="key">${esc(r.key)}</td><td>${esc(r.buyer)}</td><td class="num">${rub(r.price)}</td>
+        <td>${r.source_url ? `<a href="${esc(r.source_url)}" target="_blank" rel="noopener">${badge(r.source_platform)} ${rub(r.source_price)}</a>` : '—'}</td>
+        <td><div class="actions"><span class="status" style="--c:${ORDER_COLOR[r.status] || 'var(--warn)'}"><i></i>${esc(ORDER_LABEL[r.status] || r.status)}</span>${r.purchase_ref ? `<span class="sub">заказ ${esc(r.purchase_ref)}</span>` : ''}${r.platform === 'playerok' ? `<a href="https://playerok.com/deal/${esc(r.external_id)}" target="_blank" rel="noopener">сделка</a>` : ''}
+          ${ORDER_OPEN.includes(r.status) ? `<button onclick="deliver(${r.id})">Отправить код</button>` : ''}</div>${r.note ? `<div class="sub">${esc(r.note)}</div>` : ''}</td></tr>`).join('') + '</tbody></table>'
+      : empty('🧾', 'Заказов пока нет');
+  }
+}
+
+function tickTimer() {
+  if (!state) return;
+  const ring = $('ringProg'), len = 94.25, total = (state.rules?.interval_minutes || 60) * 60;
+  if (state.scanning) { $('timerText').textContent = 'идёт скан'; $('timerSub').textContent = 'проверяю цены…'; ring.style.strokeDashoffset = len * .75; $('timer').classList.add('busy'); return; }
+  if (!state.next_scan) { $('timerText').textContent = '—'; $('timerSub').textContent = 'ждёт первого скана'; return; }
+  const left = Math.max(0, state.next_scan - Date.now() / 1000);
+  const mm = Math.floor(left / 60), ss = Math.floor(left % 60);
+  $('timerText').textContent = `${mm}:${String(ss).padStart(2, '0')}`; $('timerSub').textContent = 'до проверки';
+  ring.style.strokeDashoffset = len * (left / total);
+}
+
+function setScanning(on) {
+  const b = $('scanBtn'); b.disabled = on; b.classList.toggle('loading', on); b.textContent = on ? 'Сканирую…' : 'Сканировать сейчас';
+  $('ringProg').parentElement.style.animation = on ? 'spin 1s linear infinite' : '';
+}
+
+async function act(url, btn) {
+  btn && (btn.disabled = true);
+  const r = await (await fetch(url, {method: 'POST'})).json();
+  toast(r.result === 'ok' ? 'Готово' : r.result, r.result === 'ok' ? 'var(--ok)' : 'var(--warn)'); load();
+}
+async function deliver(id) {
+  const text = prompt('Код или данные для покупателя:'); if (!text) return;
+  const o = state.orders.find(x => x.id === id), unknown = ['delivering', 'delivery_unknown'].includes(o?.status);
+  if (unknown && !confirm('Сначала проверьте сделку на площадке. Подтверждаете, что код не был отправлен покупателю?')) return;
+  const r = await (await fetch(`/api/orders/${id}/deliver`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({text, confirm_unknown: unknown})})).json();
+  toast(r.result === 'ok' ? 'Отправлено покупателю' : r.result, r.result === 'ok' ? 'var(--ok)' : 'var(--bad)'); load();
+}
+$('scanBtn').addEventListener('click', async e => {
+  const b = e.currentTarget, rect = b.getBoundingClientRect(), s = document.createElement('span');
+  s.className = 'ripple'; s.style.width = s.style.height = rect.width + 'px';
+  s.style.left = e.clientX - rect.left - rect.width / 2 + 'px'; s.style.top = e.clientY - rect.top - rect.width / 2 + 'px';
+  b.appendChild(s); setTimeout(() => s.remove(), 600);
+  setScanning(true); toast('Скан запущен: площадки, затем проверка цен Playerok');
+  try { const r = await (await fetch('/api/scan', {method: 'POST'})).json(); toast(`Скан готов: связок ${r.opportunities}`, 'var(--ok)'); }
+  catch { toast('Скан не удался', 'var(--bad)'); }
+  finally { setScanning(false); load(); }
+});
+
+function moveSlider() {
+  const a = document.querySelector('nav button.active'), sl = $('slider');
+  sl.style.left = a.offsetLeft + 'px'; sl.style.width = a.offsetWidth + 'px';
+}
+const tabButtons = [...document.querySelectorAll('#tabs [data-tab]')];
+function selectTab(button, {focus = false, scroll = false} = {}) {
+  tabButtons.forEach(x => { const active = x === button; x.classList.toggle('active', active); x.setAttribute('aria-selected', String(active)); x.tabIndex = active ? 0 : -1; });
+  tab = button.dataset.tab; moveSlider(); render();
+  if (focus) button.focus();
+  if (scroll && matchMedia('(max-width: 720px)').matches) $(tab === 'ops' ? 'toolbar' : 'table').scrollIntoView({block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+}
+tabButtons.forEach((b, i) => {
+  b.setAttribute('role', 'tab'); b.setAttribute('aria-controls', 'table'); b.setAttribute('aria-selected', String(b.classList.contains('active'))); b.tabIndex = b.classList.contains('active') ? 0 : -1;
+  b.onclick = () => selectTab(b, {scroll: true});
+  b.onkeydown = e => {
+    const next = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0;
+    if (e.key === 'Home') { e.preventDefault(); selectTab(tabButtons[0], {focus: true}); }
+    else if (e.key === 'End') { e.preventDefault(); selectTab(tabButtons.at(-1), {focus: true}); }
+    else if (next) { e.preventDefault(); selectTab(tabButtons[(i + next + tabButtons.length) % tabButtons.length], {focus: true}); }
+  };
+});
+let swipeStart = null;
+$('table').addEventListener('pointerdown', e => {
+  if (e.pointerType !== 'touch' || e.target.closest('button,a,input,select,summary,details')) return;
+  swipeStart = {x:e.clientX,y:e.clientY};
+}, {passive:true});
+$('table').addEventListener('pointerup', e => {
+  if (!swipeStart || e.pointerType !== 'touch') return;
+  const dx=e.clientX-swipeStart.x, dy=e.clientY-swipeStart.y; swipeStart=null;
+  if (Math.abs(dx)<72 || Math.abs(dx)<Math.abs(dy)*1.25) return;
+  const current=tabButtons.findIndex(x=>x.dataset.tab===tab), target=Math.max(0,Math.min(tabButtons.length-1,current+(dx<0?1:-1)));
+  if (target!==current) selectTab(tabButtons[target]);
+}, {passive:true});
+const st = document.createElement('style'); st.textContent = '@keyframes spin { to { transform: rotate(270deg); } }'; document.head.appendChild(st);
+addEventListener('resize', moveSlider);
+setupFilters(); moveSlider(); document.fonts?.ready.then(moveSlider);
+$('refreshBtn').onclick = () => load();
+document.addEventListener('visibilitychange', () => { if (!document.hidden) load(); });
+addEventListener('online', () => load());
+load(); setInterval(() => { if (!document.hidden) load(); }, 20000); setInterval(tickTimer, 1000);
+</script>
+</body>
+</html>

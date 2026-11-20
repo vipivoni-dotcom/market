@@ -1,0 +1,115 @@
+{
+ "_about": "10.11: игры с донатом, добавленные одной записью. Читают бот (arb/games.py) и страница обложек (index.html). match — regex названия, unit — код единицы из units, playerok — раздел, funpay/donatov/paygame — разделы поставщиков, theme/look/outfit — обложка.",
+ "units": {
+  "COINS": {"aliases": ["coins", "coin", "монет", "монеты", "монет", "коинов"], "forms": ["монета", "монеты", "монет"], "icon": "🪙"},
+  "DIAMONDS": {"aliases": [], "forms": ["алмаз", "алмаза", "алмазов"], "icon": "💎"},
+  "CRYSTALS": {"aliases": ["lattices", "lattice", "решёток", "решеток"], "forms": ["кристалл", "кристалла", "кристаллов"], "icon": "💠"},
+  "GEMS": {"aliases": [], "forms": ["гем", "гема", "гемов"], "icon": "💎"},
+  "DCOINS": {"aliases": ["delta coins", "delta coin", "дельта коинов", "дельта коинс", "coins delta"], "forms": ["Delta Coins", "Delta Coins", "Delta Coins"], "icon": "🪙"},
+  "BUCKS": {"aliases": ["баксов", "бакса", "баксы", "бакс", "bucks"], "forms": ["бакс", "бакса", "баксов"], "icon": "💵"},
+  "BRILLIANTS": {"aliases": ["бриллиантов", "бриллианта", "бриллианты", "бриллиант"], "forms": ["бриллиант", "бриллианта", "бриллиантов"], "icon": "💎"},
+  "CASH": {"aliases": ["кеша", "кеш", "кэша", "кэш", "pool cash", "cash"], "forms": ["кеш", "кеша", "кеша"], "icon": "💵"}
+ },
+ "games": {
+  "efootball": {
+   "title": "eFootball", "match": "efootball|e-football|pes\\s*mobile", "unit": "COINS", "subtitle": "Монеты eFootball", "hero": "coin",
+   "funpay": 1253,
+   "theme": {"backdrop": "hex", "bg": ["#031c35", "#07649b", "#20b9d5"], "glow": "#80eaff", "accent": "#f9dc65", "gem": "#4bb9ed", "side": "#063b60", "coin": ["E", 440]},
+   "look": {"outfit": "football", "lens": "sky", "cuff": "#45bbeb", "looks": [["cheer", "coin"], ["raise", "coin"], ["point", "gamepad"]]}
+  },
+  "tanki_blitz": {
+   "title": "Tanks Blitz", "match": "tanks?\\s*blitz|world\\s*of\\s*tanks\\s*blitz|танки\\s*блиц|танков\\s*блиц", "unit": "GOLD", "subtitle": "Золото Tanks Blitz", "hero": "uc",
+   "funpay": 1195,
+   "theme": {"backdrop": "crates", "bg": ["#17140c", "#5a4a24", "#d5a936"], "glow": "#ffe27a", "accent": "#ffd66b", "gem": "#e4b943", "side": "#332710", "coin": ["G", 620]},
+   "look": {"outfit": "tactical", "lens": "amber", "cuff": "#d5a936", "looks": [["raise", "coin"], ["point", "coin"], ["hip", "gamepad"]]}
+  },
+  "magic_chess": {
+   "title": "Magic Chess: Go Go", "split_region": true, "match": "magic\\s*chess", "unit": "DIAMONDS", "subtitle": "Пополнение по ID", "hero": "gem",
+   "playerok": {"category_id": "1efeef65-885b-6d60-8079-4c83fa7d168e", "obtaining": "ID игрока", "region_field": "region"},
+   "funpay": 3433, "donatov": "magic-chess-go-go", "paygame": ["magic-chess-go-go/offers?type=diamonds"],
+   "theme": {"backdrop": "shards", "bg": ["#120626", "#4a1a9e", "#b05cff"], "glow": "#e0b8ff", "accent": "#ffd66b", "gem": "#c58cff", "side": "#2a0f5c"},
+   "outfit": ["knight", {"GOLD": "#ffd66b", "STEEL": "#6a3fd0", "DK": "#3a1f80", "RUBY": "#5fe0ff"}],
+   "look": {"outfit": "magic_chess", "lens": "violet", "cuff": "#ffd66b", "looks": [["raise", "sword"], ["point", "gem"], ["cheer", "gem"]]}
+  },
+  "delta_force": {
+   "title": "Delta Force", "match": "delta\\s*(force|coins?)|дельта\\s*форс", "unit": "DCOINS", "subtitle": "Пополнение по ID", "hero": "uc",
+   "playerok": {"category_id": "1efbbd5a-3c66-60d0-5c53-2cafe6eda441", "obtaining": "Без входа в аккаунт", "attributes": {"platform": "any"}},
+   "funpay": 3013, "donatov": "delta-force", "paygame": ["delta-force/offers?type=deltacoins"],
+   "theme": {"backdrop": "crates", "bg": ["#0b0f0a", "#2c3a24", "#8fa83a"], "glow": "#d6f27a", "accent": "#ffd66b", "gem": "#c9e04a", "side": "#1a2414", "coin": ["DC", 440]},
+   "outfit": ["tactical", {"O": "#3d4a30", "RIM": "#26301d", "POUCH": "#55663f", "FLAP": "#1e2617", "PLATE": "#323d27", "TAN": "#c9e04a"}],
+   "look": {"outfit": "delta_force", "lens": "lime", "cuff": "#8fa83a", "looks": [["raise", "coin"], ["hip", "coin"], ["point", "gift"]]}
+  },
+  "marvel_rivals": {
+   "title": "Marvel Rivals", "match": "marvel\\s*rivals|марвел\\s*ривалс", "unit": "CRYSTALS", "subtitle": "Пополнение по ID", "hero": "crystal",
+   "playerok": {"category_id": "1efb6438-4537-6220-fa46-a33a6224eadf", "obtaining": "ID игрока"},
+   "funpay": 3051, "donatov": "marvel-rivals", "paygame": ["marvel-rivals/offers?type=lattices"],
+   "theme": {"backdrop": "shards", "bg": ["#1a0306", "#7a0f18", "#e8323a"], "glow": "#ff9aa0", "accent": "#ffd66b", "gem": "#ffcf4a", "side": "#3d070c"},
+   "outfit": ["racer", {"A": "#c8102e", "B": "#1b1b22", "C": "#7a0a1c", "D": "#ffd66b"}],
+   "look": {"outfit": "marvel_rivals", "lens": "red", "cuff": "#ffcf4a", "looks": [["raise", "gem"], ["cheer", "gem"], ["point", "bolt"]]}
+  },
+  "drag_racing": {
+   "title": "Drag Racing", "match": "drag\\s*racing|уличные\\s*гонки", "unit": "BUCKS", "subtitle": "Пополнение по ID", "hero": "uc",
+   "playerok": {"category_id": "1ed6b39a-6bce-6aa0-1d02-bacfca913f74", "obtaining": "ID игрока"},
+   "funpay": 1928, "paygame": ["drag-racing/offers?type=bucks"],
+   "theme": {"backdrop": "hex", "bg": ["#0a0d12", "#22303f", "#3fb06a"], "glow": "#8dffb5", "accent": "#ffe066", "gem": "#4fe08a", "side": "#141c26", "coin": ["$", 620]},
+   "outfit": ["racer", {"A": "#2e9b58", "B": "#1b2229", "C": "#1c6b3c", "D": "#ffe066"}],
+   "look": {"outfit": "drag_racing", "lens": "green", "cuff": "#ffe066", "looks": [["raise", "coin"], ["cheer", "coin"], ["point", "gift"]]}
+  },
+  "likee": {
+   "title": "Likee", "match": "\\blikee\\b|лайки", "unit": "DIAMONDS", "subtitle": "Пополнение по ID", "hero": "gem",
+   "playerok": {"category_id": "1ed61552-3443-6360-2666-42aaa820caa2", "obtaining": "Без входа в аккаунт"},
+   "funpay": 1361, "donatov": "likee-diamond",
+   "theme": {"backdrop": "stars", "bg": ["#1f0618", "#8a1a6e", "#ff5fb0"], "glow": "#ffb3dd", "accent": "#ffe6f3", "gem": "#ff7ac2", "side": "#4a0f3a"},
+   "outfit": ["headset", {"body": "#fff0f8", "acc": "#ff4fa6", "led": "#ff8fcb", "hood": "#c2287a", "stripe": "#ffc2e2", "mic": true}],
+   "look": {"outfit": "likee", "lens": "pink", "cuff": "#ff4fa6", "looks": [["wave", "phone"], ["point", "gem"], ["cheer", "gem"]]}
+  },
+  "bigo_live": {
+   "title": "Bigo Live", "match": "bigo", "unit": "DIAMONDS", "subtitle": "Пополнение по ID", "hero": "gem",
+   "playerok": {"category_id": "1f129161-da6b-6540-7d6a-6b0a6bcb8255", "obtaining": "Без входа в аккаунт (По ID)", "amount_field": "amout"},
+   "donatov": "bigo",
+   "theme": {"backdrop": "stars", "bg": ["#03182b", "#0a6a8a", "#1fd1c9"], "glow": "#9ffff5", "accent": "#fff0a8", "gem": "#4fe8e0", "side": "#063a4a"},
+   "outfit": ["headset", {"body": "#eafffd", "acc": "#14b8b0", "led": "#6ff5ee", "hood": "#0a6a6a", "stripe": "#b8fff9", "mic": true}],
+   "look": {"outfit": "bigo_live", "lens": "sky", "cuff": "#14b8b0", "looks": [["wave", "phone"], ["raise", "gem"], ["point", "phone"]]}
+  },
+  "my_singing_monsters": {
+   "title": "My Singing Monsters", "match": "singing\\s*monsters|\\bmsm\\b", "unit": "BRILLIANTS", "subtitle": "Пополнение по ID", "hero": "gem",
+   "playerok": {"category_id": "1ed5946d-6e57-6c60-ba1c-5fc0ca5505d0", "obtaining": "BBB ID"},
+   "funpay": 1485, "paygame": ["my-singing-monsters/offers?type=brilliants"],
+   "theme": {"backdrop": "tiles", "bg": ["#06231a", "#167a4a", "#7fd84a"], "glow": "#d4ff9a", "accent": "#fff3a8", "gem": "#7fe0ff", "side": "#0b3f2a"},
+   "outfit": ["survivor", {"RED": "#7fd84a", "WHITE": "#fff6d8", "LEATHER": "#2a5a3a", "BRASS": "#ffcf4a"}],
+   "look": {"outfit": "my_singing_monsters", "lens": "green", "cuff": "#ffcf4a", "looks": [["cheer", "gem"], ["wave", "gift"], ["raise", "gem"]]}
+  },
+  "love_and_deepspace": {
+   "title": "Love and Deepspace", "match": "love\\s*(and|&)\\s*deep\\s*space", "unit": "CRYSTALS", "subtitle": "Пополнение по ID", "hero": "crystal",
+   "playerok": {"category_id": "1efeef55-ecee-63f0-f423-ddb3b0e30713", "obtaining": "ID игрока", "amount_field": "amout"},
+   "funpay": 3885, "donatov": "love-and-deepspace", "paygame": ["love-and-deepspace/offers?type=crystals"],
+   "theme": {"backdrop": "stars", "bg": ["#0a0820", "#3a2a7a", "#d88cff"], "glow": "#f2d6ff", "accent": "#ffe6a3", "gem": "#c9a6ff", "side": "#201a4a"},
+   "outfit": ["mage", {"V": "#2a2060", "V2": "#6a4fc0", "G": "#ffd98a"}],
+   "look": {"outfit": "love_and_deepspace", "lens": "violet", "cuff": "#ffd98a", "cape": "#4a3a9e", "looks": [["raise", "wand"], ["point", "gem"], ["cheer", "wand"]]}
+  },
+  "eight_ball_pool": {
+   "title": "8 Ball Pool", "match": "8\\s*ball\\s*pool", "unit": "CASH", "subtitle": "Пополнение по ID", "hero": "uc",
+   "playerok": {"category_id": "1eeb435f-0d3c-61e0-e977-d6349e2d26a8", "obtaining": "ID игрока"},
+   "funpay": 2141, "donatov": "8-ball-pool",
+   "theme": {"backdrop": "hex", "bg": ["#04140a", "#0b5a2a", "#1fa85a"], "glow": "#9effc2", "accent": "#ffe066", "gem": "#ffd02e", "side": "#063a1a", "coin": ["8", 620]},
+   "outfit": ["courier", {"T": "#0b5a2a", "T2": "#063a1a", "G": "#ffd02e", "BAG": "#2e332e"}],
+   "look": {"outfit": "eight_ball_pool", "lens": "gold", "cuff": "#ffd02e", "looks": [["raise", "coin"], ["front", "gift"], ["point", "coin"]]}
+  },
+  "hay_day": {
+   "title": "Hay Day", "match": "hay\\s*day|хей\\s*дей", "unit": "DIAMONDS", "subtitle": "Пополнение по тегу", "hero": "gem",
+   "playerok": {"category_id": "1ecc48ce-5378-67d0-eb1f-6a04b3da233c", "obtaining": "Тег игрока"},
+   "funpay": 1005, "donatov": "hayday-russia", "paygame": ["hay-day/offers?type=diamonds"],
+   "theme": {"backdrop": "crates", "bg": ["#1a1004", "#6b4a12", "#e8b82a"], "glow": "#ffe58a", "accent": "#fff3c2", "gem": "#3ee07a", "side": "#3a2808"},
+   "outfit": ["mage", {"V": "#a8321e", "V2": "#e8b82a", "G": "#fff3c2"}],
+   "look": {"outfit": "hay_day", "lens": "amber", "cuff": "#e8b82a", "cape": "#a8321e", "looks": [["wave", "gift"], ["point", "gem"], ["cheer", "gem"]]}
+  },
+  "stumble_guys": {
+   "title": "Stumble Guys", "match": "stumble\\s*guys", "unit": "GEMS", "subtitle": "Пополнение по нику", "hero": "gem",
+   "playerok": {"category_id": "1ed59f51-3153-6550-1a66-a8213d07a65e", "obtaining": "Никнейм игрока"},
+   "funpay": 1475, "donatov": "stumble-guys", "paygame": ["stumble-guys/offers?type=gemstones"],
+   "theme": {"backdrop": "tiles", "bg": ["#061436", "#1a4fd0", "#ffb800"], "glow": "#ffe066", "accent": "#ffe066", "gem": "#4fd0ff", "side": "#0b2a78"},
+   "outfit": ["survivor", {"RED": "#ffb800", "WHITE": "#1a4fd0", "LEATHER": "#0b2a78", "BRASS": "#ff5f5f"}],
+   "look": {"outfit": "stumble_guys", "lens": "orange", "cuff": "#ffb800", "looks": [["cheer", "gem"], ["wave", "gem"], ["raise", "gift"]]}
+  }
+ }
+}

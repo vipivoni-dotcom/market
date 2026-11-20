@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Обложки карточек</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+  body { margin: 0; padding: 24px; background: #0b0d14; color: #e8eaf3; font: 14px/1.5 Inter, system-ui, sans-serif; }
+  h1 { font-size: 20px; margin: 0 0 4px; } p { color: #8b90a6; margin: 0 0 20px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 18px; }
+  canvas { width: 100%; height: auto; border-radius: 14px; box-shadow: 0 12px 32px rgba(0,0,0,.45); display: block; }
+  figcaption { color: #8b90a6; font-size: 12px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<h1>Обложки карточек</h1>
+<p>Так выглядят фото товаров, которые бот рисует при выставлении на Playerok.</p>
+<div class="grid" id="grid"></div>
+<script src="/card_render.js"></script>
+<script>
+const SAMPLES = [
+  {brand: 'google_play', amount: 300, unit: 'TRY', region: 'Турция', subtitle: 'Подарочная карта'},
+  {brand: 'psn', amount: 1, unit: 'USD', region: 'США', subtitle: 'Карта пополнения PSN'},
+  {brand: 'apple', amount: 100, unit: 'INR', region: 'Индия', subtitle: 'Подарочная карта'},
+  {brand: 'mobile_legends', amount: 500, unit: 'алмазов', region: 'RU / Global', subtitle: 'Пополнение по ID'},
+  {brand: 'free_fire', amount: 231, unit: 'алмазов', region: 'RU / СНГ', subtitle: 'Пополнение по ID'},
+  {brand: 'brawl_stars', amount: 80, unit: 'гемов', region: 'Любой регион', subtitle: 'Пополнение'},
+  {brand: 'pubg', amount: 60, unit: 'UC', region: 'Global', subtitle: 'Пополнение по ID'},
+  {brand: 'telegram', amount: 50, unit: 'звёзд', subtitle: 'Подарком на ваш аккаунт'},
+  {brand: 'roblox', amount: 400, unit: 'Robux', subtitle: 'Подарочная карта'},
+];
+document.fonts.load('900 40px Inter').finally(() => {
+  for (const s of SAMPLES) {
+    const fig = document.createElement('figure'); fig.style.margin = 0;
+    const c = document.createElement('canvas'); ArbCard.draw(c, s);
+    fig.append(c, Object.assign(document.createElement('figcaption'), {textContent: `${s.brand}: ${s.amount} ${s.unit}`}));
+    document.getElementById('grid').append(fig);
+  }
+});
+</script>
+</body>
+</html>

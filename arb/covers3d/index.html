@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3D-обложки</title>
+<link href="vendor/inter.css" rel="stylesheet"><!-- всё локально: бот рисует обложки без доступа к CDN -->
+<style>
+  body { margin: 0; padding: 16px; background: #0b0d14; color: #e8eaf3; font: 14px/1.5 Inter, system-ui, sans-serif; }
+  #grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 14px; }
+  canvas { width: 100%; height: auto; border-radius: 12px; display: block; }
+</style>
+<script type="importmap">
+{"imports": {"three": "./vendor/three.module.js",
+             "three/addons/": "./vendor/jsm/"}}
+</script>
+</head>
+<body>
+<div id="grid"></div>
+<script>
+  // Ошибка разбора модуля (SyntaxError) не попадает в try ниже: сообщаем боту сразу, а не через 5 минут ожидания.
+  addEventListener('error', e => {
+    const key = new URLSearchParams(location.search).get('key');
+    if (key && !window.__failed) { window.__failed = true; fetch('/fail/' + encodeURIComponent(key), {method: 'POST', body: String(e.message)}); }
+  });
+</script>
+<script type="module">
+import { renderCard, addGames } from './card3d.js';
+import { addVariants } from './mascot.js';
+const ml = (a, region) => ({name: `ml_${a}_${region}`, brand: 'mobile_legends', amount: a, unit: 'алмазов', region, subtitle: 'Пополнение по ID', hero: 'gem'});
+const ff = a => ({name: `ff_${a}`, brand: 'free_fire', amount: a, unit: 'алмазов', region: 'cis', subtitle: 'Пополнение по ID', hero: 'gem'});
+const gp = (a, unit, region) => ({name: `gp_${a}_${unit}${region ? '_' + region : ''}`, brand: 'google_play', amount: a, unit, region, subtitle: 'Подарочная карта', hero: 'card'});
+const gs = a => ({name: `gs_${a}`, brand: 'genshin', amount: a, unit: 'кристаллов', subtitle: 'Пополнение по UID', hero: 'crystal'});
+const pubg = a => ({name: `pubg_${a}`, brand: 'pubg', amount: a, unit: 'UC', subtitle: 'Пополнение по ID', hero: 'uc'});
+const apple = (a, unit, region) => ({name: `apple_${a}_${unit}`, brand: 'apple', amount: a, unit, region, subtitle: 'Подарочная карта', hero: 'card'});
+const psn = (a, unit, region) => ({name: `psn_${a}_${unit}`, brand: 'psn', amount: a, unit, region, subtitle: 'Карта пополнения', hero: 'card'});
+const tg = (a, unit = 'звёзд') => ({name: `tg_${a}`, brand: 'telegram', amount: a, unit, subtitle: 'Подарком в Telegram', hero: 'star'});
+const ALL = [
+  pubg(180), pubg(360), pubg(1045),
+  {name: 'pubg_60', brand: 'pubg', amount: 60, unit: 'UC', subtitle: 'Код пополнения', hero: 'uc'},
+  ml(165, 'ru'), ml(35, 'ru'), ml(500, 'ru'),
+  ...[14, 35, 42, 86, 172, 257, 275, 344, 429, 514, 565, 570, 706].map(a => ml(a, 'global')),
+  ff(110), ff(231), ff(1188), ff(2420), gs(60), gs(1090),
+  gp(25, 'TRY', 'tr'), gp(300, 'TRY', 'tr'), gp(500, 'TRY', 'tr'), gp(5000, 'IDR', 'id'), gp(10000, 'IDR', 'id'),
+  gp(10, 'INR', 'in'), gp(50, 'INR', 'in'), gp(1, 'EUR', 'de'), gp(5, 'EUR', 'de'), gp(10, 'EUR', 'es'), gp(50, 'PLN', 'pl'), gp(250, 'TRY', 'tr'),
+  gp(750, 'TRY', 'tr'), gp(1000, 'TRY', 'tr'),
+  apple(10, 'TRY', 'tr'), apple(25, 'TRY', 'tr'), apple(20, 'PLN', 'pl'), apple(15, 'TRY', 'tr'), apple(20, 'TRY', 'tr'),
+  psn(1, 'USD', 'us'), psn(50, 'PLN', 'pl'), psn(25, 'EUR', 'nl'),
+  tg(13), tg(21, 'звезда'), tg(26), tg(39),
+  // 05.11: новые связки (в конце, чтобы образы прежних обложек не сдвинулись)
+  gp(1500, 'TRY', 'tr'), gp(15, 'EUR', 'nl'), gp(20, 'BRL', 'br'), gp(500, 'JPY', 'jp'),
+  ml(1050, 'global'), {...ff(583), unit: 'алмаза'}, tg(43, 'звезды'), apple(2, 'USD', 'us'),
+];
+// У каждого сервиса свой порядок поз: одна и та же карточка всегда получает один образ.
+const seen = {};
+ALL.forEach(s => { s.look = seen[s.brand] = (seen[s.brand] ?? -1) + 1; });
+
+// Обложка по ключу товара (google_play:1500TRY, mobile_legends:1050DIAMONDS@GLOBAL) — так её рисует бот сам.
+const plural = (n, one, few, many) => { const a = n % 100, b = n % 10; return a > 10 && a < 20 ? many : b === 1 ? one : b > 1 && b < 5 ? few : many; };
+// Регион подарочной карты по валюте: только там, где валюта однозначно задаёт страну.
+const CURRENCY_REGION = {TRY: 'tr', INR: 'in', IDR: 'id', PLN: 'pl', USD: 'us', BRL: 'br', JPY: 'jp'};
+// 06.11: для новых карт (Steam, Xbox, Nintendo, Battle.net, Razer) — ещё и валюты, которые однозначно задают страну
+const CARD_REGION = {...CURRENCY_REGION, KZT: 'kz', ARS: 'ar', MXN: 'mx', CAD: 'ca', AUD: 'au', GBP: 'gb', HKD: 'hk', MYR: 'my',
+  PHP: 'ph', CLP: 'cl', NOK: 'no', CHF: 'ch', AED: 'ae', SAR: 'sa', ZAR: 'za', NZD: 'nz', COP: 'co', PEN: 'pe', THB: 'th', CNY: 'cn'};
+// Карты: имя файла без региона (steam_10_USD) — так его ищет бот, если региона нет в ключе.
+const CARDS = {steam: 'Код пополнения', xbox: 'Подарочная карта', nintendo: 'Цифровой код', battlenet: 'Код пополнения', razer: 'Подарочная карта'};
+// Игровая валюта: единица по числу, надпись под ней, вид товара
+const GAME = {
+  brawl_stars: ['GEMS', ['гем', 'гема', 'гемов'], 'Пополнение по тегу', 'gem'],
+  clash_royale: ['GEMS', ['гем', 'гема', 'гемов'], 'Пополнение по тегу', 'gem'],
+  clash_of_clans: ['GEMS', ['гем', 'гема', 'гемов'], 'Пополнение по тегу', 'gem'],
+  roblox: ['ROBUX', ['Robux', 'Robux', 'Robux'], 'Код на Robux', 'uc'],
+  fortnite: ['VBUCKS', ['V-Bucks', 'V-Bucks', 'V-Bucks'], 'Подарок из магазина', 'uc'],
+  valorant: ['VP', ['VP', 'VP', 'VP'], 'Код на Valorant Points', 'uc'],
+  honkai_star_rail: ['SHARDS', ['древний сон', 'древних сна', 'древних снов'], 'Пополнение по UID', 'crystal'],
+  zenless_zone_zero: ['MONOCHROME', ['монохром', 'монохрома', 'монохромов'], 'Пополнение по UID', 'gem'],
+  wuthering_waves: ['LUNITE', ['лунит', 'лунита', 'лунитов'], 'Пополнение по UID', 'crystal'],
+  codm: ['CP', ['CP', 'CP', 'CP'], 'Пополнение по ID', 'uc'],
+  fc_mobile: ['FCPOINTS', ['FC Points', 'FC Points', 'FC Points'], 'Пополнение по ID', 'uc'],
+  honor_of_kings: ['TOKENS', ['жетон', 'жетона', 'жетонов'], 'Пополнение по ID', 'gem'],
+  standoff2: ['GOLD', ['золото', 'золота', 'золота'], 'Пополнение по ID', 'uc'],
+};
+// 10.11: игры из games.json — одна запись на игру (её же читает бот)
+const EXTRA = await fetch('games.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));
+for (const [brand, g] of Object.entries(EXTRA.games || {})) {
+  const u = (EXTRA.units || {})[g.unit];
+  if (!u || GAME[brand]) continue;
+  GAME[brand] = [g.unit, u.forms, g.subtitle, g.hero || 'gem'];
+  if (g.outfit) addVariants({[brand]: g.outfit});
+}
+addGames(EXTRA.games || {});
+// Подписки: срок в месяцах. Тариф идёт в название и в имя файла (discord_nitro_basic_1_M).
+const SUBS = {telegram_premium: ['Подарком в Telegram', 'star', {}], discord_nitro: ['Подарочная ссылка', 'gem', {basic: 'Discord Nitro Basic'}]};
+function specFromKey(key) {
+  const m = /^([a-z_0-9]+?)(?:-([\w]+))?:([\d.]+)([A-Z]+)(?::[\w]+)?(?:@([A-Z]+))?$/.exec(key);
+  if (!m) return null;
+  const [, brand, tier, a, cur, reg] = m, n = Number(a), region = reg && reg.toLowerCase();
+  const look = Math.round(n) % 7, sub = SUBS[brand], game = GAME[brand];
+  if (sub && cur === 'M' && (!tier || sub[2][tier]))
+    return {name: `${brand}${tier ? '_' + tier : ''}_${a}_M`, brand, title: tier && sub[2][tier], amount: n,
+            unit: plural(n, 'месяц', 'месяца', 'месяцев'), subtitle: sub[0], hero: sub[1], look};
+  if (game && cur === game[0])
+    return {name: `${brand}_${a}${region ? '_' + region : ''}`, brand, amount: n, unit: plural(n, ...game[1]),
+            region, subtitle: game[2], hero: game[3], look};
+  if (CARDS[brand] && cur !== 'RUB' && !/^[A-Z]+S$|^VP$|^UC$/.test(cur))
+    return {name: `${brand}_${a}_${cur}`, brand, amount: n, unit: cur, region: region || (brand === 'steam' && cur === 'USD' ? undefined : CARD_REGION[cur]), subtitle: CARDS[brand], hero: 'card', look};
+  if (brand === 'mobile_legends' && cur === 'DIAMONDS' && region) return {...ml(n, region), unit: plural(n, 'алмаз', 'алмаза', 'алмазов'), look};
+  if (brand === 'free_fire' && cur === 'DIAMONDS') return {...ff(n), unit: plural(n, 'алмаз', 'алмаза', 'алмазов'), look};
+  if (brand === 'genshin' && cur === 'CRYSTALS') return {...gs(n), unit: plural(n, 'кристалл', 'кристалла', 'кристаллов'), look};
+  if (brand === 'pubg' && cur === 'UC') return {...pubg(n), look};
+  if (brand === 'telegram' && cur === 'STARS') return {...tg(n, plural(n, 'звезда', 'звезды', 'звёзд')), look};
+  const r = region || CURRENCY_REGION[cur];
+  if (brand === 'google_play' && (r || cur === 'EUR')) return {...gp(n, cur, r), look};
+  if (brand === 'apple') return {...apple(n, cur, r), look};
+  if (brand === 'psn') return {...psn(n, cur, r), look};
+  return null;
+}
+const params = new URLSearchParams(location.search);
+const only = params.get('only'), byKey = params.get('key');
+let SAMPLES = only ? ALL.filter(s => only.split(',').includes(s.name)) : ALL;
+if (byKey) {
+  const s = specFromKey(byKey);
+  if (!s) { await fetch('/fail/' + encodeURIComponent(byKey), {method: 'POST', body: 'нет шаблона обложки для ' + byKey}); throw new Error('нет шаблона'); }
+  SAMPLES = [s];
+}
+// Донат (включая звёзды) — комикс; подарочные карты и подписки — люкс.
+// Суффикс отделяет новый кэш от прежнего случайного выбора стиля.
+const DONATION = new Set([...Object.keys(GAME), 'pubg', 'mobile_legends', 'free_fire', 'genshin', 'telegram']);
+const style = params.get('style');
+SAMPLES = SAMPLES.map(s => {
+  const chosen = style || (DONATION.has(s.brand) ? 'comic' : 'luxe');
+  return {...s, style: chosen, name: `${s.name}__${chosen}`};
+});
+window.__done = false;
+try {
+  for (const s of SAMPLES) {
+    const c = await renderCard(s);
+    document.getElementById('grid').append(c);
+    const blob = await new Promise(r => c.toBlob(r, 'image/png'));
+    await fetch('/save/' + s.name, {method: 'POST', body: blob});
+  }
+  window.__done = true;
+} catch (e) {
+  window.__done = 'ERR ' + e + ' ' + e.stack;
+  if (byKey) await fetch('/fail/' + encodeURIComponent(byKey), {method: 'POST', body: String(e)});
+}
+</script>
+</body>
+</html>

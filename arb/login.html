@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="same-origin">
+<meta name="color-scheme" content="light dark"><meta name="theme-color" content="#f5f5f7"><title>Вход · DragDiller</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100dvh;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% -20%,#dcecff,#f5f5f7 60%);color:#1d1d1f;font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",sans-serif}
+main{width:100%;max-width:400px;background:rgba(255,255,255,.9);border:1px solid rgba(29,29,31,.08);border-radius:26px;padding:32px;box-shadow:0 16px 50px rgba(0,0,0,.08)}
+h1{font-size:30px;letter-spacing:-.04em;margin:0 0 8px}p{color:#6e6e73;line-height:1.5}label{display:block;margin:24px 0 8px;font-size:14px;font-weight:600}
+input,button{font:inherit;width:100%;padding:14px 16px;border-radius:13px;min-height:50px}input{background:#fff;color:inherit;border:1px solid rgba(29,29,31,.16)}button{margin-top:18px;background:#06c;color:white;border:0;font-weight:650;cursor:pointer}button:active{transform:scale(.99)}#error{color:#d70015}:focus-visible{outline:3px solid rgba(0,102,204,.45);outline-offset:3px}
+@media(prefers-color-scheme:dark){body{background:radial-gradient(ellipse at 50% -20%,#18283d,#000 68%);color:#f5f5f7}main{background:rgba(28,28,30,.94);border-color:rgba(255,255,255,.1)}p{color:#a1a1a6}input{background:#2c2c2e;color:inherit;border-color:rgba(255,255,255,.16)}}
+</style></head><body><main><h1>DragDiller</h1><p>Управление связками, карточками и заказами.</p>
+<form method="post" action="/login"><label for="password">Пароль панели</label><input id="password" name="password" type="password" autocomplete="current-password" required maxlength="512"><p id="error" hidden>Пароль не подошёл. Попробуйте ещё раз.</p><button type="submit">Войти</button></form></main></body></html>
